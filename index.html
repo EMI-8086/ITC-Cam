@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estado del Estacionamiento</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<!--
+        python -m http.server 5500
+        http://localhost:5500 
+        172.20.189.248        
+    -->
+<div class="container">
+    <div class="header">
+        <div>
+            Estacionamiento<br>
+            Zona 1
+        </div>
+        <div id="currentTime">hora --:--</div>
+    </div>
+
+    <div class="flow-arrow arrow-top-left">➡</div>
+    <div class="flow-arrow arrow-top-mid">➡</div>
+    <div class="flow-arrow arrow-right">⬇</div>
+
+    <div class="parking-layout">
+        <div class="parking-row row-top">
+            <div class="slot" id="cajon_11"><span>cajón 11</span></div>
+            <div class="slot" id="cajon_12"><span>cajón 12</span></div>
+            <div class="slot" id="cajon_13"><span>cajón 13</span></div>
+            <div class="slot" id="cajon_14"><span>cajón 14</span></div>
+            <div class="slot" id="cajon_15"><span>cajón 15</span></div>
+            <div class="slot" id="cajon_16"><span>cajón 16</span></div>
+            <div class="slot" id="cajon_17"><span>cajón 17</span></div>
+            <div class="slot" id="cajon_18"><span>cajón 18</span></div>
+            <div class="slot" id="cajon_19"><span>cajón 19</span></div>
+            <div class="slot" id="cajon_20"><span>cajón 20</span></div>
+        </div>
+
+        <div class="divider-line"></div>
+        
+        <div class="parking-row row-bottom">
+            <div class="slot" id="cajon_1"><span>cajón 1</span></div>
+            <div class="slot" id="cajon_2"><span>cajón 2</span></div>
+            <div class="slot" id="cajon_3"><span>cajón 3</span></div>
+            <div class="slot" id="cajon_4"><span>cajón 4</span></div>
+            <div class="slot" id="cajon_5"><span>cajón 5</span></div>
+            <div class="slot" id="cajon_6"><span>cajón 6</span></div>
+            <div class="slot" id="cajon_7"><span>cajón 7</span></div>
+            <div class="slot" id="cajon_8"><span>cajón 8</span></div>
+            <div class="slot" id="cajon_9"><span>cajón 9</span></div>
+            <div class="slot" id="cajon_10"><span>cajón 10</span></div>
+        </div>
+    </div>
+
+    <div class="flow-arrow arrow-bottom-left">➡</div>
+    <div class="flow-arrow arrow-bottom-mid">➡</div>
+
+    <footer>Actualización automática cada 3 segundos</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+    const SUPABASE_URL = "https://jzcfwfdcnfwgfttxhhwy.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp6Y2Z3ZmRjbmZ3Z2Z0dHhoaHd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjg1MDMsImV4cCI6MjA5NDcwNDUwM30.h160y8Fr1xbwQVygGZ4Il87cycatYedISwgxAZQZuGQ";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    function updateTime() {
+        const now = new Date();
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        document.getElementById('currentTime').innerText = `hora ${hours}:${minutes}`;
+    }
+
+    async function fetchParkingStatus() {
+        try {
+            updateTime();
+
+            const { data, error } = await supabaseClient
+                .from('cajones_estado')
+                .select('id, estado');
+
+            if (error) throw error;
+            if (!data || data.length === 0) return;
+
+            data.forEach(slot => {
+                const slotElement = document.getElementById(slot.id);
+                
+                if (slotElement) {
+                    slotElement.classList.remove('libre', 'ocupado');
+                    let carImg = slotElement.querySelector('.car-image');
+                    
+                    if (slot.estado === 'libre') {
+                        slotElement.classList.add('libre');
+                        if (carImg) {
+                            carImg.remove();
+                        }
+                    } else if (slot.estado === 'ocupado') {
+                        slotElement.classList.add('ocupado');
+                        if (!carImg) {
+                            carImg = document.createElement('img');
+                            carImg.src = 'blue car-sin fondo.png';
+                            carImg.classList.add('car-image');
+                            slotElement.appendChild(carImg);
+                        }
+                    }
+                }
+            });
+
+        } catch (err) {
+            console.error("Error al obtener los datos de Supabase:", err.message);
+        }
+    }
+
+    fetchParkingStatus();
+    setInterval(fetchParkingStatus, 3000);
+</script>
+
+</body>
+</html>
